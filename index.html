@@ -625,19 +625,40 @@ header {
 
 /* ===== CELTIC CROSS ===== */
 .celtic-wrapper {
-  display:flex; gap:20px; justify-content:center;
-  flex-wrap:wrap; align-items:flex-start; padding:10px 0;
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 10px 4px;
+  overflow-x: auto;
 }
 .celtic-cross-grid {
-  display:grid;
-  grid-template-columns: repeat(3, 108px);
-  grid-template-rows: repeat(4, auto);
-  gap:10px;
+  display: grid;
+  grid-template-areas:
+    ". top ."
+    "left center right"
+    ". bottom .";
+  grid-template-columns: 108px 108px 108px;
+  grid-template-rows: auto auto auto;
+  gap: 10px;
+  flex-shrink: 0;
 }
-.celtic-staff { display:flex; flex-direction:column-reverse; gap:10px; }
-.gc {
-  display:flex; align-items:center; justify-content:center;
-  position:relative; min-height:175px;
+.gc-top    { grid-area: top; }
+.gc-left   { grid-area: left; }
+.gc-center { grid-area: center; position: relative; display:flex; align-items:center; justify-content:center; }
+.gc-right  { grid-area: right; }
+.gc-bottom { grid-area: bottom; }
+.gc-cross-card {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+.celtic-staff {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 /* ===== RESPONSIVE ===== */
@@ -1081,47 +1102,51 @@ function renderCeltic(container) {
   const wrap = document.createElement('div');
   wrap.className = 'celtic-wrapper';
 
-  // === 왼쪽: 십자가 그리드 (4행 x 3열) ===
-  // 행0: [빈칸][위(2)][빈칸]
-  // 행1: [좌(4)][중심(0+1교차)][우(5)]
-  // 행2: [빈칸][아래(3)][빈칸]
+  // === 왼쪽: 십자가 그리드 ===
+  // 위(2:의식적목표) / 좌(4:과거) / 중심(0:현재상황+1:교차) / 우(5:가까운미래) / 아래(3:무의식기반)
   const grid = document.createElement('div');
   grid.className = 'celtic-cross-grid';
 
-  // 12칸(4x3) 생성
-  const cells = [];
-  for (let i = 0; i < 12; i++) {
-    const c = document.createElement('div');
-    c.className = 'gc';
-    grid.appendChild(c);
-    cells.push(c);
+  function makeCell(areaClass) {
+    const d = document.createElement('div');
+    d.className = areaClass;
+    return d;
   }
 
-  // 위쪽(의식적 목표) - 행0, 열1 = index 1
-  cells[1].appendChild(mkSlot(cards[2], 2, sp.positions[2]));
+  // 위
+  const topCell = makeCell('gc-top');
+  topCell.appendChild(mkSlot(cards[2], 2, sp.positions[2]));
+  grid.appendChild(topCell);
 
-  // 왼쪽(과거) - 행1, 열0 = index 3
-  cells[3].appendChild(mkSlot(cards[4], 4, sp.positions[4]));
+  // 좌
+  const leftCell = makeCell('gc-left');
+  leftCell.appendChild(mkSlot(cards[4], 4, sp.positions[4]));
+  grid.appendChild(leftCell);
 
-  // 중심 + 교차 - 행1, 열1 = index 4
-  cells[4].style.position = 'relative';
-  const centerSlot = mkSlot(cards[0], 0, sp.positions[0]);
-  cells[4].appendChild(centerSlot);
+  // 중심 (카드0 + 카드1 교차 겹침)
+  const centerCell = makeCell('gc-center');
+  centerCell.appendChild(mkSlot(cards[0], 0, sp.positions[0]));
+  const crossDiv = document.createElement('div');
+  crossDiv.className = 'gc-cross-card';
   const crossSlot = mkSlot(cards[1], 1, sp.positions[1]);
   crossSlot.querySelector('.card-3d').style.transform = 'rotate(90deg)';
-  crossSlot.querySelector('.card-pos-label').style.display = 'none';
-  crossSlot.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;pointer-events:none;';
-  // 교차 카드는 뒤집기 가능하도록
-  crossSlot.style.pointerEvents = 'auto';
-  cells[4].appendChild(crossSlot);
+  const lbl = crossSlot.querySelector('.card-pos-label');
+  if(lbl) lbl.style.display = 'none';
+  crossDiv.appendChild(crossSlot);
+  centerCell.appendChild(crossDiv);
+  grid.appendChild(centerCell);
 
-  // 오른쪽(가까운 미래) - 행1, 열2 = index 5
-  cells[5].appendChild(mkSlot(cards[5], 5, sp.positions[5]));
+  // 우
+  const rightCell = makeCell('gc-right');
+  rightCell.appendChild(mkSlot(cards[5], 5, sp.positions[5]));
+  grid.appendChild(rightCell);
 
-  // 아래(무의식 기반) - 행2, 열1 = index 7
-  cells[7].appendChild(mkSlot(cards[3], 3, sp.positions[3]));
+  // 아래
+  const bottomCell = makeCell('gc-bottom');
+  bottomCell.appendChild(mkSlot(cards[3], 3, sp.positions[3]));
+  grid.appendChild(bottomCell);
 
-  // === 오른쪽: 스태프 (아래→위 순서로 6,7,8,9) ===
+  // === 오른쪽: 스태프 (아래→위: 6자신태도, 7외부환경, 8희망두려움, 9최종결과) ===
   const staff = document.createElement('div');
   staff.className = 'celtic-staff';
   [6, 7, 8, 9].forEach(ci => {
