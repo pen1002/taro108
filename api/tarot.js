@@ -1,39 +1,28 @@
-export const config = { runtime: 'edge' };
+const https = require('https');
 
-export default async function handler(request) {
-  if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      }
+module.exports = function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') { res.status(200).end(); return; }
+  if (req.method !== 'POST') { res.status(405).json({ error: 'not allowed' }); return; }
+  var apiKey = process.env.CLAUDE_API_KEY;
+  if (!apiKey) { res.status(500).json({ error: 'no key' }); return; }
+  var messages = req.body && req.body.messages ? req.body.messages : [];
+  var payload = JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1024, messages: messages });
+  var opts = {
+    hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(payload) }
+  };
+  var r = https.request(opts, function(response) {
+    var data = '';
+    response.on('data', function(c) { data += c; });
+    response.on('end', function() {
+      try { res.status(response.statusCode).json(JSON.parse(data)); }
+      catch(e) { res.status(500).json({ error: 'parse error' }); }
     });
-  }
-
-  const body = await request.json();
-  
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.CLAUDE_API_KEY,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      messages: body.messages,
-    }),
   });
-
-  const data = await response.json();
-
-  return new Response(JSON.stringify(data), {
-    status: response.status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-    },
-  });
-}
+  r.on('error', function(e) { res.status(500).json({ error: e.message }); });
+  r.write(payload);
+  r.end();
+};
