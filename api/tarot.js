@@ -1,65 +1,39 @@
-const https = require('https');
+export const config = { runtime: 'edge' };
 
-module.exports = function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
+export default async function handler(request) {
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      }
+    });
   }
 
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
-  }
-
-  var apiKey = process.env.CLAUDE_API_KEY;
-  if (!apiKey) {
-    res.status(500).json({ error: 'API Key 미설정' });
-    return;
-  }
-
-  var messages = req.body && req.body.messages ? req.body.messages : [];
-
-  var payload = JSON.stringify({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 1024,
-    messages: messages
-  });
-
-  var options = {
-    hostname: 'api.anthropic.com',
-    path: '/v1/messages',
+  const body = await request.json();
+  
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
+      'x-api-key': process.env.CLAUDE_API_KEY,
       'anthropic-version': '2023-06-01',
-      'Content-Length': Buffer.byteLength(payload)
-    }
-  };
-
-  var req2 = https.request(options, function(response) {
-    var data = '';
-    response.on('data', function(chunk) {
-      data += chunk;
-    });
-    response.on('end', function() {
-      try {
-        var parsed = JSON.parse(data);
-        res.status(response.statusCode).json(parsed);
-      } catch (e) {
-        res.status(500).json({ error: 'parse error' });
-      }
-    });
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1024,
+      messages: body.messages,
+    }),
   });
 
-  req2.on('error', function(e) {
-    res.status(500).json({ error: e.message });
-  });
+  const data = await response.json();
 
-  req2.write(payload);
-  req2.end();
-};
+  return new Response(JSON.stringify(data), {
+    status: response.status,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+    },
+  });
+}
