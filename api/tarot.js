@@ -53,4 +53,3 @@ module.exports = function handler(req, res) {
   request.write(payload);
   request.end();
 };
-```
