@@ -54,11 +54,3 @@ module.exports = function handler(req, res) {
   request.end();
 };
 ```
-
----
-
-## 커밋 후
-```
-Vercel 자동 재배포 (1분)
-→ 🟢 Ready 확인
-→ tarot108.vercel.app 테스트
