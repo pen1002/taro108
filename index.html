@@ -14,13 +14,13 @@
   --card-bg: #16132d;
   --panel: #1c1838;
   --panel2: #221e40;
-  --gold: #c8a84b;
-  --gold-light: #e8ca7a;
-  --gold-dim: #6a5520;
+  --gold: #d4a940;
+  --gold-light: #f2d878;
+  --gold-dim: #9a7a30;
   --gold-pale: rgba(200,168,75,0.12);
   --crimson: #8b1a2f;
-  --text: #e2d8c4;
-  --text-dim: #8880a0;
+  --text: #f5edd8;
+  --text-dim: #c0b8d8;
   --glow: rgba(200,168,75,0.22);
   --glow2: rgba(180,100,255,0.12);
   --radius: 12px;
@@ -632,48 +632,11 @@ header {
   padding: 10px 4px;
   overflow-x: auto;
 }
-.celtic-cross {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex-shrink: 0;
-}
-.celtic-row {
-  display: flex;
-  flex-direction: row;
-  gap: 8px;
-  align-items: flex-start;
-  justify-content: center;
-}
-.celtic-empty {
-  width: 108px;
-  height: 195px;
-  flex-shrink: 0;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  pointer-events: none;
-  visibility: hidden;
-}
-.celtic-center {
-  position: relative;
-  width: 108px;
-  flex-shrink: 0;
-}
-.celtic-cross-overlay {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -38%);
-  z-index: 3;
-  pointer-events: auto;
-}
 .celtic-staff {
   display: flex;
   flex-direction: column-reverse;
   gap: 8px;
   flex-shrink: 0;
-  margin-top: 10px;
 }
 
 /* ===== RESPONSIVE ===== */
@@ -1114,58 +1077,57 @@ function mkSlot(card, index, posLabel) {
 
 function renderCeltic(container) {
   const sp = SPREADS.celtic, cards = state.drawnCards;
+  const CW = 108, CH = 195, GAP = 8;
+
+  // 십자가 전체를 하나의 position:relative 컨테이너로
+  // 총 너비: CW*3 + GAP*2 = 340
+  // 총 높이: CH*3 + GAP*2 = 601
+  const totalW = CW*3 + GAP*2;
+  const totalH = CH*3 + GAP*2;
+
   const wrap = document.createElement('div');
   wrap.className = 'celtic-wrapper';
 
+  // 십자가 컨테이너 (position:relative, 고정크기)
   const cross = document.createElement('div');
-  cross.className = 'celtic-cross';
+  cross.style.cssText = 'position:relative;width:'+totalW+'px;height:'+totalH+'px;flex-shrink:0;';
 
-  // ── 행1: 위(2:의식적목표) 중앙 ──
-  const row1 = document.createElement('div');
-  row1.className = 'celtic-row';
-  const e1a = document.createElement('div'); e1a.className = 'celtic-empty';
-  const e1b = document.createElement('div'); e1b.className = 'celtic-empty';
-  row1.appendChild(e1a);
-  row1.appendChild(mkSlot(cards[2], 2, sp.positions[2]));
-  row1.appendChild(e1b);
-  cross.appendChild(row1);
+  function pos(slot, col, row) {
+    slot.style.position = 'absolute';
+    slot.style.left = (col*(CW+GAP))+'px';
+    slot.style.top = (row*(CH+GAP))+'px';
+    slot.style.width = CW+'px';
+    return slot;
+  }
 
-  // ── 행2: 좌(4) | 중심(0)+교차(1) | 우(5) ──
-  const row2 = document.createElement('div');
-  row2.className = 'celtic-row';
+  // col0=0, col1=CW+GAP, col2=(CW+GAP)*2
+  // row0=0, row1=CH+GAP, row2=(CH+GAP)*2
 
-  const centerWrap = document.createElement('div');
-  centerWrap.className = 'celtic-center';
-  centerWrap.appendChild(mkSlot(cards[0], 0, sp.positions[0]));
+  // 위 (2: 의식적목표) col1 row0
+  cross.appendChild(pos(mkSlot(cards[2],2,sp.positions[2]), 1, 0));
+  // 좌 (4: 과거) col0 row1
+  cross.appendChild(pos(mkSlot(cards[4],4,sp.positions[4]), 0, 1));
+  // 중심 (0: 현재상황) col1 row1
+  cross.appendChild(pos(mkSlot(cards[0],0,sp.positions[0]), 1, 1));
+  // 교차 (1: 교차영향) col1 row1 중앙 겹침 (90도 회전)
+  var cs = mkSlot(cards[1],1,sp.positions[1]);
+  cs.querySelector('.card-3d').style.transform = 'rotate(90deg)';
+  var cslbl = cs.querySelector('.card-pos-label');
+  if(cslbl) cslbl.style.display='none';
+  cs.style.position = 'absolute';
+  cs.style.left = (1*(CW+GAP) + (CW-CH)/2)+'px';
+  cs.style.top  = (1*(CH+GAP) + (CH-CW)/2)+'px';
+  cs.style.zIndex = '3';
+  cross.appendChild(cs);
+  // 우 (5: 가까운미래) col2 row1
+  cross.appendChild(pos(mkSlot(cards[5],5,sp.positions[5]), 2, 1));
+  // 아래 (3: 무의식기반) col1 row2
+  cross.appendChild(pos(mkSlot(cards[3],3,sp.positions[3]), 1, 2));
 
-  const overlay = document.createElement('div');
-  overlay.className = 'celtic-cross-overlay';
-  const crossSlot = mkSlot(cards[1], 1, sp.positions[1]);
-  crossSlot.querySelector('.card-3d').style.transform = 'rotate(90deg)';
-  const cl = crossSlot.querySelector('.card-pos-label');
-  if(cl) cl.style.display = 'none';
-  overlay.appendChild(crossSlot);
-  centerWrap.appendChild(overlay);
-
-  row2.appendChild(mkSlot(cards[4], 4, sp.positions[4]));
-  row2.appendChild(centerWrap);
-  row2.appendChild(mkSlot(cards[5], 5, sp.positions[5]));
-  cross.appendChild(row2);
-
-  // ── 행3: 아래(3:무의식기반) 중앙 ──
-  const row3 = document.createElement('div');
-  row3.className = 'celtic-row';
-  const e3a = document.createElement('div'); e3a.className = 'celtic-empty';
-  const e3b = document.createElement('div'); e3b.className = 'celtic-empty';
-  row3.appendChild(e3a);
-  row3.appendChild(mkSlot(cards[3], 3, sp.positions[3]));
-  row3.appendChild(e3b);
-  cross.appendChild(row3);
-
-  // ── 스태프: 아래→위 6,7,8,9 ──
+  // 스태프 (아래→위: 6,7,8,9)
   const staff = document.createElement('div');
   staff.className = 'celtic-staff';
-  [6, 7, 8, 9].forEach(ci => staff.appendChild(mkSlot(cards[ci], ci, sp.positions[ci])));
+  [6,7,8,9].forEach(ci => staff.appendChild(mkSlot(cards[ci],ci,sp.positions[ci])));
 
   wrap.appendChild(cross);
   wrap.appendChild(staff);
