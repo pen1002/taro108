@@ -161,16 +161,19 @@ header {
 }
 .tab {
   flex: 1;
-  padding: 11px 4px;
+  padding: 10px 2px;
   border: none;
   border-radius: 9px;
   background: transparent;
   color: var(--text-dim);
   font-family: 'Noto Serif KR', serif;
-  font-size: clamp(13px, 2.6vw, 16px);
+  font-size: clamp(11px, 2.2vw, 14px);
   cursor: pointer;
   transition: all 0.25s;
-  letter-spacing: 0.3px;
+  letter-spacing: 0px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .tab.active {
   background: linear-gradient(135deg, var(--gold-dim), #8a6c10);
@@ -307,7 +310,7 @@ header {
 .card-slot { text-align:center; }
 .card-pos-label {
   font-size: 9.5px;
-  color: var(--gold-dim);
+  color: var(--gold-light);
   margin-bottom: 6px;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -634,15 +637,16 @@ header {
 }
 .celtic-tbl { border-collapse: separate; border-spacing: 8px; }
 .celtic-tbl td { padding: 0; vertical-align: top; }
-.celtic-tbl td.empty { visibility: hidden; width: 108px; height: 195px; }
-.celtic-tbl td.center-cell { position: relative; }
+.celtic-tbl td.empty { visibility: hidden; width: 108px; height: 215px; }
+.celtic-tbl td.center-cell { position: relative; min-height: 215px; }
 .cross-card-overlay {
   position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -42%);
+  top: 53px;
+  left: -34px;
   z-index: 4;
+  width: 175px;
 }
-.cross-card-overlay .card-3d { transform: rotate(90deg) !important; }
+.cross-card-overlay .card-3d { transform: rotate(90deg); }
 .celtic-staff {
   display: flex;
   flex-direction: column-reverse;
@@ -1121,13 +1125,15 @@ function renderCeltic(container) {
   // 중심 셀: card0 위에 card1을 절대위치로 겹침
   var centerTd = document.createElement('td');
   centerTd.className = 'center-cell';
-  centerTd.appendChild(mkSlot(cards[0],0,sp.positions[0]));
-  // 교차 카드 오버레이
+  var slot0 = mkSlot(cards[0],0,sp.positions[0]);
+  centerTd.appendChild(slot0);
+  // 교차 카드 오버레이 (90도 회전, 중앙 겹침)
   var overlayDiv = document.createElement('div');
   overlayDiv.className = 'cross-card-overlay';
   var crossSlot = mkSlot(cards[1],1,sp.positions[1]);
   var lbl = crossSlot.querySelector('.card-pos-label');
   if(lbl) lbl.style.display = 'none';
+  // 교차카드 클릭 이벤트 유지 (card-3d 찾아서 rotate)
   overlayDiv.appendChild(crossSlot);
   centerTd.appendChild(overlayDiv);
   tr2.appendChild(centerTd);
